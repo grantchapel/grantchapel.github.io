@@ -46,6 +46,16 @@ button.primary{background:#F07A2E;border-color:#F07A2E}
 .ordhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .note{background:#16181D;color:#F4F3EF;border-radius:12px;padding:18px 22px;font-size:14px;line-height:1.55}
 .note b{color:#F07A2E}
+.retform{border:1px solid #E2DED6;border-radius:8px;padding:12px;background:#FBFAF7}
+.retrow{display:grid;grid-template-columns:1fr 110px 140px;gap:10px;align-items:end;padding:8px 0;border-bottom:1px solid #EEEAE2}
+.retrow:last-of-type{border-bottom:0;margin-bottom:8px}
+.retname b{display:block;font-size:14px;color:#16181D}.retname span{font-size:12px;color:#5B5F68}
+.retrow label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#4A4E57}
+.retrow input{font-size:14px;padding:7px 8px;border:1px solid #CFCAC0;border-radius:6px;width:100%;box-sizing:border-box;background:#fff}
+.retrow input:focus{outline:2px solid #F07A2E;outline-offset:1px}
+.retrow input.bad{border-color:#B42318}
+#retcreate:disabled{opacity:.45;cursor:not-allowed}
+@media (max-width:560px){.retrow{grid-template-columns:1fr 1fr}.retname{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -58,7 +68,7 @@ button.primary{background:#F07A2E;border-color:#F07A2E}
 <div style="padding:32px 0 0;display:flex;flex-direction:column;gap:10px;max-width:760px">
 <p class="mono" style="margin:0;font-size:13px;color:#B4440A;text-transform:uppercase;letter-spacing:.04em">Demo · Warehouse floor tool</p>
 <h1 style="font-size:38px;line-height:1.1">Scan-to-find, auto-tags and a picture pick list</h1>
-<p style="margin:0;color:#4A4E57;font-size:17px;line-height:1.55">A simplified, sample-data version of the kind of tools I built on the ShipHero API. Scan a tracking or order number and the order pops up with automatic tags. Start a return in one click, or pick the order with every item shown on screen. (Colored tiles stand in for product photos.)</p>
+<p style="margin:0;color:#4A4E57;font-size:17px;line-height:1.55">A simplified, sample-data version of the kind of tools I built on the ShipHero API. Scan a tracking or order number and the order pops up with automatic tags. Start a return (enter the quantity that came back and where it goes), or pick the order with every item shown on screen. (Colored tiles stand in for product photos.)</p>
 </div>
 
 <div class="grid">
@@ -109,8 +119,28 @@ function find(q){q=q.trim().toUpperCase().replace(/^#/,'');if(!q)return;
  var tg=tags(o).map(function(t){return '<span class="tag '+t[1]+'">'+t[0]+'</span>'}).join('');
  result.innerHTML='<div class="ordhead"><h3 style="font-size:22px">Order '+o.id+'</h3><span class="mono" style="font-size:12px;color:#5B5F68">'+esc(o.tracking)+'</span></div>'+
  '<p style="margin:8px 0 4px;font-size:14px">'+esc(o.customer)+' · '+esc(o.ship)+'</p><p style="margin:0 0 10px;font-size:14px;color:#4A4E57">'+esc(o.carrier)+'</p><div>'+tg+'</div>'+'<div style="margin-top:14px;display:flex;flex-direction:column;gap:10px"><button type="button" class="primary" id="retbtn">Start return for this order</button><p class="hint" id="retmsg" aria-live="polite"></p></div>';
- var rb=document.getElementById('retbtn');rb.onclick=function(){var n='RMA-'+o.id.replace('#','');var q=o.items.reduce(function(a,i){return a+i.qty},0);document.getElementById('retmsg').innerHTML='<b style="color:#1D5A3C">✓ Return '+n+' created</b> for order '+o.id+' · '+q+' units · original order found from the tracking number. No searching, no retyping.';rb.disabled=true;rb.textContent='Return created';};
+ var rb=document.getElementById('retbtn');rb.onclick=function(){openReturn(o,rb)};
  renderPicks(o);}
+function openReturn(o,rb){rb.style.display='none';var box=document.getElementById('retmsg');
+ var h='<div class="retform"><p style="margin:0 0 8px;font-weight:600;color:#16181D">Return for order '+o.id+'. Enter the quantity received for each item and confirm where it goes back.</p>';
+ o.items.forEach(function(i,k){h+='<div class="retrow"><div class="retname"><b>'+esc(i.name)+'</b><span class="mono">'+esc(i.sku)+' · ordered '+i.qty+'</span></div>'+
+  '<label>Qty returned<input type="number" inputmode="numeric" min="0" max="'+i.qty+'" step="1" placeholder="0–'+i.qty+'" data-k="'+k+'" class="rq"></label>'+
+  '<label>Return to location<input type="text" value="'+esc(i.bin)+'" data-k="'+k+'" class="rl mono"></label></div>'});
+ h+='<button type="button" class="primary" id="retcreate" disabled>Create return</button><p class="hint" id="reterr" style="margin:6px 0 0">Enter a quantity for every item (0 if it didn\'t come back).</p></div>';
+ box.innerHTML=h;
+ var qs=box.querySelectorAll('.rq'),ls=box.querySelectorAll('.rl'),btn=document.getElementById('retcreate'),err=document.getElementById('reterr');
+ function check(){var ok=true,total=0,msg='';
+  qs.forEach(function(q){var it=o.items[q.dataset.k],v=q.value.trim(),n=Number(v);q.classList.remove('bad');
+   if(v===''){ok=false;return}
+   if(!Number.isInteger(n)||n<0||n>it.qty){ok=false;q.classList.add('bad');msg='Quantity for '+it.sku+' must be 0–'+it.qty+'.';return}
+   total+=n});
+  ls.forEach(function(l){l.classList.remove('bad');if(!l.value.trim()){ok=false;l.classList.add('bad');msg=msg||'Every item needs a return location.'}});
+  if(ok&&total===0){ok=false;msg='At least one item must be returned.'}
+  btn.disabled=!ok;err.textContent=msg||(ok?total+' unit'+(total===1?'':'s')+' ready to return.':'Enter a quantity for every item (0 if it didn\'t come back).');err.style.color=msg?'#B42318':'';}
+ qs.forEach(function(q){q.addEventListener('input',check)});ls.forEach(function(l){l.addEventListener('input',check)});
+ btn.onclick=function(){var lines=[],total=0;qs.forEach(function(q){var n=Number(q.value),it=o.items[q.dataset.k];if(n>0){total+=n;lines.push('<li><span class="mono">'+esc(it.sku)+'</span> × '+n+' → <span class="mono">'+esc(ls[q.dataset.k].value.trim().toUpperCase())+'</span></li>')}});
+  box.innerHTML='<b style="color:#1D5A3C">✓ Return RMA-'+o.id.replace('#','')+' created</b> for order '+o.id+' · '+total+' unit'+(total===1?'':'s')+'<ul style="margin:6px 0 4px;padding-left:18px">'+lines.join('')+'</ul>Original order found from the tracking number. No searching, no retyping.';};
+ qs[0].focus();}
 function renderPicks(o){pickfor.textContent='Order '+o.id+' — tap Picked as each item goes in the tote.';itemsEl.innerHTML='';
  o.items.forEach(function(i){var row=document.createElement('div');row.className='item';
   row.innerHTML='<div class="thumb" style="background:'+i.color+';color:'+(i.color==='#2B2D33'||i.color==='#6B7A4B'?'#fff':'#16181D')+'">'+esc(i.sku)+'</div><div class="meta"><b>'+esc(i.name)+'</b><span class="mono">'+esc(i.sku)+' · Bin '+esc(i.bin)+'</span></div><div class="qty" aria-label="Quantity">×'+i.qty+'</div>';
