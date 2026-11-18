@@ -47,15 +47,14 @@ button.primary{background:#F07A2E;border-color:#F07A2E}
 .note{background:#16181D;color:#F4F3EF;border-radius:12px;padding:18px 22px;font-size:14px;line-height:1.55}
 .note b{color:#F07A2E}
 .retform{border:1px solid #E2DED6;border-radius:8px;padding:12px;background:#FBFAF7}
-.retrow{display:grid;grid-template-columns:1fr 110px 140px;gap:10px;align-items:end;padding:8px 0;border-bottom:1px solid #EEEAE2}
+.retrow{display:grid;grid-template-columns:1fr 1.3fr;gap:6px 10px;align-items:end;padding:8px 0;border-bottom:1px solid #EEEAE2}
 .retrow:last-of-type{border-bottom:0;margin-bottom:8px}
-.retname b{display:block;font-size:14px;color:#16181D}.retname span{font-size:12px;color:#5B5F68}
+.retname{grid-column:1/-1}.retname b{display:block;font-size:14px;color:#16181D}.retname span{font-size:12px;color:#5B5F68}
 .retrow label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#4A4E57}
 .retrow input{font-size:14px;padding:7px 8px;border:1px solid #CFCAC0;border-radius:6px;width:100%;box-sizing:border-box;background:#fff}
 .retrow input:focus{outline:2px solid #F07A2E;outline-offset:1px}
 .retrow input.bad{border-color:#B42318}
 #retcreate:disabled{opacity:.45;cursor:not-allowed}
-@media (max-width:560px){.retrow{grid-template-columns:1fr 1fr}.retname{grid-column:1/-1}}
 </style>
 </head>
 <body>
