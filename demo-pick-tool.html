@@ -58,7 +58,7 @@ button.primary{background:#F07A2E;border-color:#F07A2E}
 <div style="padding:32px 0 0;display:flex;flex-direction:column;gap:10px;max-width:760px">
 <p class="mono" style="margin:0;font-size:13px;color:#B4440A;text-transform:uppercase;letter-spacing:.04em">Demo · Warehouse floor tool</p>
 <h1 style="font-size:38px;line-height:1.1">Scan-to-find, auto-tags and a picture pick list</h1>
-<p style="margin:0;color:#4A4E57;font-size:17px;line-height:1.55">A simplified version of the kind of in-house tool I built on the ShipHero API: scan a tracking or order number, the order pops up with automatic tags, and pickers see a photo of every item so mis-picks drop.</p>
+<p style="margin:0;color:#4A4E57;font-size:17px;line-height:1.55">A simplified, sample-data version of the kind of tools I built on the ShipHero API. Scan a tracking or order number and the order pops up with automatic tags. Start a return in one click, or pick the order with every item shown on screen. (Colored tiles stand in for product photos.)</p>
 </div>
 
 <div class="grid">
@@ -108,7 +108,8 @@ function find(q){q=q.trim().toUpperCase().replace(/^#/,'');if(!q)return;
  if(!o){result.innerHTML='<p style="margin:0;font-weight:600">No order found for <span class="mono">'+esc(q)+'</span></p><p class="hint">Check the number, or try one of the samples above.</p>';return;}
  var tg=tags(o).map(function(t){return '<span class="tag '+t[1]+'">'+t[0]+'</span>'}).join('');
  result.innerHTML='<div class="ordhead"><h3 style="font-size:22px">Order '+o.id+'</h3><span class="mono" style="font-size:12px;color:#5B5F68">'+esc(o.tracking)+'</span></div>'+
- '<p style="margin:8px 0 4px;font-size:14px">'+esc(o.customer)+' · '+esc(o.ship)+'</p><p style="margin:0 0 10px;font-size:14px;color:#4A4E57">'+esc(o.carrier)+'</p><div>'+tg+'</div>';
+ '<p style="margin:8px 0 4px;font-size:14px">'+esc(o.customer)+' · '+esc(o.ship)+'</p><p style="margin:0 0 10px;font-size:14px;color:#4A4E57">'+esc(o.carrier)+'</p><div>'+tg+'</div>'+'<div style="margin-top:14px;display:flex;flex-direction:column;gap:10px"><button type="button" class="primary" id="retbtn">Start return for this order</button><p class="hint" id="retmsg" aria-live="polite"></p></div>';
+ var rb=document.getElementById('retbtn');rb.onclick=function(){var n='RMA-'+o.id.replace('#','');var q=o.items.reduce(function(a,i){return a+i.qty},0);document.getElementById('retmsg').innerHTML='<b style="color:#1D5A3C">✓ Return '+n+' created</b> for order '+o.id+' · '+q+' units · original order found from the tracking number. No searching, no retyping.';rb.disabled=true;rb.textContent='Return created';};
  renderPicks(o);}
 function renderPicks(o){pickfor.textContent='Order '+o.id+' — tap Picked as each item goes in the tote.';itemsEl.innerHTML='';
  o.items.forEach(function(i){var row=document.createElement('div');row.className='item';
