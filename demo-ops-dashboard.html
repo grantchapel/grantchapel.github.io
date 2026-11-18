@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo: Multi-channel ops dashboard — Grant Chapel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F4F3EF;color:#16181D;font-family:Inter,system-ui,sans-serif}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0}
+a{color:#16181D}a:hover{color:#B4440A}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{border-bottom:1px solid #DDDBD3;padding:16px 0}
+.top .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.badge{font-size:12px;padding:5px 9px;border-radius:4px;border:1px solid #C9C6BC;background:#fff}
+.kpis{display:flex;flex-wrap:wrap;gap:14px;margin:24px 0}
+.kpi{flex:1 1 180px;background:#16181D;color:#F4F3EF;border-radius:12px;padding:18px}
+.kpi span{display:block;font-size:13px;color:#B5B8C0}
+.kpi b{display:block;font:600 34px 'Space Grotesk',sans-serif;margin-top:6px}
+.cols{display:flex;flex-wrap:wrap;gap:20px;padding-bottom:60px}
+.panel{background:#fff;border:1px solid #DDDBD3;border-radius:12px;padding:20px}
+.orders{flex:2 1 600px;min-width:0}
+.side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+button{font:600 13px Inter,sans-serif;padding:9px 12px;border-radius:8px;border:1.5px solid #C9C6BC;background:#fff;cursor:pointer;min-height:40px}
+button[aria-pressed=true]{background:#16181D;color:#F4F3EF;border-color:#16181D}
+.tablebox{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;color:#5B5F68;font-weight:600;padding:10px 8px;border-bottom:1px solid #DDDBD3;white-space:nowrap}
+td{padding:11px 8px;border-bottom:1px solid #EEECE6;white-space:nowrap}
+.chip{font:500 12px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:4px}
+.s-New{background:#EEECE6}.s-Picking{background:#F6E7C3;color:#6B4A05}.s-Packed{background:#DCE8FA;color:#1F3F75}.s-Shipped{background:#D8F0E4;color:#1D5A3C}.s-Exception{background:#FCE3D3;color:#8A3A0B}
+.ch{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:14px}
+.ch .bar{flex:1;height:10px;background:#EEECE6;border-radius:6px;overflow:hidden}
+.ch .bar div{height:100%;background:#F07A2E}
+.low li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EEECE6;font-size:14px}
+.low{list-style:none;margin:0;padding:0}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a href="index.html" style="text-decoration:none;font-weight:600">← Grant Chapel</a>
+<span class="badge mono">DEMO · SAMPLE DATA · NOT A REAL CLIENT'S NUMBERS</span>
+</div></header>
+
+<main class="wrap">
+<div style="padding:32px 0 0;display:flex;flex-direction:column;gap:10px;max-width:780px">
+<p class="mono" style="margin:0;font-size:13px;color:#B4440A;text-transform:uppercase;letter-spacing:.04em">Demo · Ops dashboard</p>
+<h1 style="font-size:38px;line-height:1.1">Every sales channel, one live view</h1>
+<p style="margin:0;color:#4A4E57;font-size:17px;line-height:1.55">A simplified version of the multi-channel ops system I'm building for a streetwear reseller: storefront and marketplace orders in one list, with status, stock and exceptions at a glance.</p>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="cols">
+<section class="panel orders" aria-labelledby="o-h">
+<h2 id="o-h" style="font-size:20px">Today's orders</h2>
+<div class="filters" id="filters" role="group" aria-label="Filter by status"></div>
+<div class="tablebox"><table><thead><tr><th>Order</th><th>Channel</th><th>Item</th><th>Status</th><th>Placed</th></tr></thead><tbody id="rows"></tbody></table></div>
+</section>
+<div class="side">
+<section class="panel" aria-labelledby="c-h"><h2 id="c-h" style="font-size:20px">Orders by channel</h2><div id="channels"></div></section>
+<section class="panel" aria-labelledby="l-h"><h2 id="l-h" style="font-size:20px">Low stock</h2><ul class="low" id="low"></ul></section>
+</div>
+</div>
+</main>
+
+<script>
+var orders=[
+ ['#V1048','BigCommerce','Jordan 4 Retro — size 10','Picking','9:12 AM'],
+ ['#V1047','Grailed','Vintage Carhartt jacket — L','Packed','8:58 AM'],
+ ['#V1046','GOAT','Yeezy 350 — size 9.5','Shipped','8:41 AM'],
+ ['#V1045','BigCommerce','Supreme box logo tee — M','New','8:30 AM'],
+ ['#V1044','BigCommerce','Nike Dunk Low — size 11','Exception','8:22 AM'],
+ ['#V1043','Grailed','Stussy hoodie — XL','Shipped','8:05 AM'],
+ ['#V1042','GOAT','New Balance 550 — size 8','Packed','7:51 AM'],
+ ['#V1041','BigCommerce','Bape shark hoodie — L','Picking','7:40 AM'],
+ ['#V1040','BigCommerce','Palace tri-ferg tee — S','Shipped','7:22 AM'],
+ ['#V1039','Grailed','Arc’teryx beta jacket — M','New','7:10 AM']
+];
+var low=[['Jordan 4 Retro — size 10',1],['Nike Dunk Low — size 11',0],['Supreme box logo tee — M',2],['Bape shark hoodie — L',1]];
+var statuses=['All','New','Picking','Packed','Shipped','Exception'];var cur='All';
+function cnt(s){return orders.filter(function(o){return o[3]===s}).length}
+document.getElementById('kpis').innerHTML=[['Orders today',orders.length],['To pick',cnt('New')+cnt('Picking')],['Shipped',cnt('Shipped')],['Exceptions',cnt('Exception')]].map(function(k){return '<div class="kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>'}).join('');
+var f=document.getElementById('filters');
+statuses.forEach(function(s){var b=document.createElement('button');b.type='button';b.textContent=s+(s==='All'?'':' ('+cnt(s)+')');b.setAttribute('aria-pressed',s===cur);
+ b.onclick=function(){cur=s;[].forEach.call(f.children,function(c){c.setAttribute('aria-pressed',c===b)});render()};f.appendChild(b)});
+function render(){document.getElementById('rows').innerHTML=orders.filter(function(o){return cur==='All'||o[3]===cur}).map(function(o){
+ return '<tr><td class="mono">'+o[0]+'</td><td>'+o[1]+'</td><td>'+o[2]+'</td><td><span class="chip s-'+o[3]+'">'+o[3].toUpperCase()+'</span></td><td>'+o[4]+'</td></tr>'}).join('')}
+render();
+var chans={};orders.forEach(function(o){chans[o[1]]=(chans[o[1]]||0)+1});
+document.getElementById('channels').innerHTML=Object.keys(chans).map(function(c){return '<div class="ch"><span style="width:96px">'+c+'</span><div class="bar"><div style="width:'+(chans[c]/orders.length*100)+'%"></div></div><b>'+chans[c]+'</b></div>'}).join('');
+document.getElementById('low').innerHTML=low.map(function(l){return '<li><span>'+l[0]+'</span><b style="color:'+(l[1]===0?'#B4440A':'#16181D')+'">'+(l[1]===0?'Out':l[1]+' left')+'</b></li>'}).join('');
+</script>
+</body>
+</html>

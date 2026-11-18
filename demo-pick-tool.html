@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo: Warehouse pick &amp; scan tool — Grant Chapel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F4F3EF;color:#16181D;font-family:Inter,system-ui,sans-serif}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0}
+a{color:#16181D}a:hover{color:#B4440A}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.top{border-bottom:1px solid #DDDBD3;padding:16px 0}
+.top .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.badge{font-size:12px;padding:5px 9px;border-radius:4px;border:1px solid #C9C6BC;background:#fff}
+.grid{display:flex;flex-wrap:wrap;gap:20px;padding:28px 0 60px}
+.panel{background:#fff;border:1px solid #DDDBD3;border-radius:12px;padding:22px}
+.scan{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.picks{flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+label{font-weight:600;font-size:14px}
+input[type=text]{width:100%;font:500 18px 'JetBrains Mono',monospace;padding:14px;border:2px solid #16181D;border-radius:8px;background:#FAFAF7}
+input[type=text]:focus{outline:3px solid #F07A2E;outline-offset:1px}
+.hint{font-size:13px;color:#5B5F68;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+button{font:600 14px Inter,sans-serif;padding:10px 14px;border-radius:8px;border:1.5px solid #16181D;background:#fff;cursor:pointer;min-height:44px}
+button:hover{background:#F4F3EF}
+button.primary{background:#F07A2E;border-color:#F07A2E}
+.result{border:1px dashed #C9C6BC;border-radius:10px;padding:16px;min-height:120px}
+.tag{display:inline-block;font:500 12px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:4px;margin:2px 4px 2px 0}
+.t-rush{background:#FCE3D3;color:#8A3A0B}.t-intl{background:#DCE8FA;color:#1F3F75}.t-fragile{background:#F6E7C3;color:#6B4A05}.t-vip{background:#E7DDF7;color:#4B2C82}.t-gift{background:#D8F0E4;color:#1D5A3C}
+.item{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid #EEECE6}
+.item:last-child{border-bottom:0}
+.thumb{width:64px;height:64px;border-radius:8px;flex:0 0 64px;display:flex;align-items:center;justify-content:center;font:600 11px 'JetBrains Mono',monospace;color:#16181D;text-align:center;padding:4px}
+.item .meta{flex:1 1 auto;min-width:0}
+.item .meta b{display:block;font-size:15px}
+.item .meta span{font-size:13px;color:#5B5F68}
+.qty{font:600 20px 'Space Grotesk',sans-serif;width:56px;text-align:center}
+.pickbtn{min-width:96px}
+.done{opacity:.45}
+.done .pickbtn{background:#2E4A3E;color:#fff;border-color:#2E4A3E}
+.progress{height:10px;background:#EEECE6;border-radius:6px;overflow:hidden}
+.progress div{height:100%;background:#F07A2E;width:0;transition:width .2s}
+.ordhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.note{background:#16181D;color:#F4F3EF;border-radius:12px;padding:18px 22px;font-size:14px;line-height:1.55}
+.note b{color:#F07A2E}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<a href="index.html" style="text-decoration:none;font-weight:600">← Grant Chapel</a>
+<span class="badge mono">DEMO · SAMPLE DATA · NOT CONNECTED TO A REAL WMS</span>
+</div></header>
+
+<main class="wrap">
+<div style="padding:32px 0 0;display:flex;flex-direction:column;gap:10px;max-width:760px">
+<p class="mono" style="margin:0;font-size:13px;color:#B4440A;text-transform:uppercase;letter-spacing:.04em">Demo · Warehouse floor tool</p>
+<h1 style="font-size:38px;line-height:1.1">Scan-to-find, auto-tags and a picture pick list</h1>
+<p style="margin:0;color:#4A4E57;font-size:17px;line-height:1.55">A simplified version of the kind of in-house tool I built on the ShipHero API: scan a tracking or order number, the order pops up with automatic tags, and pickers see a photo of every item so mis-picks drop.</p>
+</div>
+
+<div class="grid">
+<section class="panel scan" aria-labelledby="scan-h">
+<h2 id="scan-h" style="font-size:20px">Scan or type a number</h2>
+<label for="scan">Tracking number, order number or SKU</label>
+<input id="scan" type="text" autocomplete="off" placeholder="e.g. 1Z84A2F80391">
+<p class="hint">With a barcode scanner, the order opens the moment the code is scanned. Try one of these:</p>
+<div class="chips" id="samples"></div>
+<div class="result" id="result" aria-live="polite"><p class="hint">No order open yet.</p></div>
+<div class="note"><b>Auto-tag rules in this demo:</b> Rush = next-day shipping · International = non-US address · Fragile = any glass/ceramic SKU · VIP = customer with 10+ orders · Gift = gift note present. Tags are added the moment an order arrives, so it lands in the right queue without anyone sorting it.</div>
+</section>
+
+<section class="panel picks" aria-labelledby="pick-h">
+<div class="ordhead">
+<div><h2 id="pick-h" style="font-size:20px">Pick list</h2><p class="hint" id="pickfor">Open an order to start picking.</p></div>
+<span class="mono" id="count" style="font-size:14px"></span>
+</div>
+<div class="progress" aria-hidden="true"><div id="bar"></div></div>
+<div id="items"></div>
+</section>
+</div>
+</main>
+
+<script>
+var orders=[
+ {id:'#58213',tracking:'1Z84A2F80391',carrier:'UPS Next Day Air',customer:'Dana R. (14 orders)',ship:'Columbus, OH, USA',gift:false,
+  items:[{sku:'MUG-CER-12',name:'Ceramic mug, 12 oz, sand',qty:2,bin:'A-03-2',color:'#E8D9C4'},{sku:'TEE-BLK-M',name:'Logo tee, black, M',qty:1,bin:'C-11-1',color:'#2B2D33'},{sku:'STK-PACK',name:'Sticker pack (6)',qty:1,bin:'F-01-4',color:'#F2C230'}]},
+ {id:'#58214',tracking:'9400111899561234567890',carrier:'USPS Ground Advantage',customer:'Marco P. (2 orders)',ship:'Toronto, ON, Canada',gift:true,
+  items:[{sku:'HOOD-GRY-L',name:'Heavyweight hoodie, gray, L',qty:1,bin:'C-14-3',color:'#9A9DA5'},{sku:'CAP-OLV',name:'Dad cap, olive',qty:1,bin:'D-02-1',color:'#6B7A4B'}]},
+ {id:'#58215',tracking:'781234567012',carrier:'FedEx Ground',customer:'Kim L. (1 order)',ship:'Austin, TX, USA',gift:false,
+  items:[{sku:'CND-AMB-8',name:'Candle, amber glass, 8 oz',qty:3,bin:'B-07-2',color:'#C98A3C'},{sku:'TOTE-NAT',name:'Canvas tote, natural',qty:1,bin:'E-05-1',color:'#EDE4D3'}]}
+];
+function tags(o){var t=[];
+ if(/Next Day|Overnight|2nd Day/i.test(o.carrier))t.push(['Rush','t-rush']);
+ if(!/USA$/.test(o.ship))t.push(['International','t-intl']);
+ if(o.items.some(function(i){return /CER|GLASS|AMB/.test(i.sku)}))t.push(['Fragile','t-fragile']);
+ var n=parseInt((o.customer.match(/\((\d+)/)||[0,0])[1],10);if(n>=10)t.push(['VIP','t-vip']);
+ if(o.gift)t.push(['Gift note','t-gift']);return t;}
+var samples=document.getElementById('samples');
+orders.forEach(function(o){var b=document.createElement('button');b.type='button';b.textContent=o.tracking;b.className='mono';b.style.fontSize='12px';
+ b.onclick=function(){scan.value=o.tracking;find(o.tracking)};samples.appendChild(b)});
+var scan=document.getElementById('scan'),result=document.getElementById('result'),itemsEl=document.getElementById('items'),bar=document.getElementById('bar'),count=document.getElementById('count'),pickfor=document.getElementById('pickfor');
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function find(q){q=q.trim().toUpperCase().replace(/^#/,'');if(!q)return;
+ var o=orders.find(function(o){return o.tracking.toUpperCase()===q||o.id.replace('#','')===q||o.items.some(function(i){return i.sku===q})});
+ if(!o){result.innerHTML='<p style="margin:0;font-weight:600">No order found for <span class="mono">'+esc(q)+'</span></p><p class="hint">Check the number, or try one of the samples above.</p>';return;}
+ var tg=tags(o).map(function(t){return '<span class="tag '+t[1]+'">'+t[0]+'</span>'}).join('');
+ result.innerHTML='<div class="ordhead"><h3 style="font-size:22px">Order '+o.id+'</h3><span class="mono" style="font-size:12px;color:#5B5F68">'+esc(o.tracking)+'</span></div>'+
+ '<p style="margin:8px 0 4px;font-size:14px">'+esc(o.customer)+' · '+esc(o.ship)+'</p><p style="margin:0 0 10px;font-size:14px;color:#4A4E57">'+esc(o.carrier)+'</p><div>'+tg+'</div>';
+ renderPicks(o);}
+function renderPicks(o){pickfor.textContent='Order '+o.id+' — tap Picked as each item goes in the tote.';itemsEl.innerHTML='';
+ o.items.forEach(function(i){var row=document.createElement('div');row.className='item';
+  row.innerHTML='<div class="thumb" style="background:'+i.color+';color:'+(i.color==='#2B2D33'||i.color==='#6B7A4B'?'#fff':'#16181D')+'">'+esc(i.sku)+'</div><div class="meta"><b>'+esc(i.name)+'</b><span class="mono">'+esc(i.sku)+' · Bin '+esc(i.bin)+'</span></div><div class="qty" aria-label="Quantity">×'+i.qty+'</div>';
+  var b=document.createElement('button');b.type='button';b.className='pickbtn';b.textContent='Picked';
+  b.onclick=function(){row.classList.toggle('done');b.textContent=row.classList.contains('done')?'✓ Picked':'Picked';update(o)};
+  row.appendChild(b);itemsEl.appendChild(row)});update(o);}
+function update(o){var d=itemsEl.querySelectorAll('.done').length,t=o.items.length;bar.style.width=(d/t*100)+'%';count.textContent=d+' / '+t+' items picked'+(d===t?' · Ready to pack':'');}
+scan.addEventListener('keydown',function(e){if(e.key==='Enter')find(scan.value)});
+scan.addEventListener('input',function(){if(scan.value.trim().length>=10)find(scan.value)});
+</script>
+</body>
+</html>
